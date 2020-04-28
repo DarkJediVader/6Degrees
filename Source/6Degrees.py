@@ -13,13 +13,42 @@ playlist_name = '{0}Degrees of {1}'
 def main_loop():
     user = input('Username: ').strip()
     scope = 'playlist-modify-public'
-    if spotipy.util.prompt_for_user_token(user, scope, client_id=client_id, client_secret=client_secret, redirect_uri=redirect_uri):
+
+    token = spotipy.util.prompt_for_user_token(user, scope, client_id=client_id, client_secret=client_secret, redirect_uri=redirect_uri)
+    if token:
+        spotify = spotipy.Spotify(auth=token)
+
         go = True
         while go:
             artist = input('Artist Name: ')
+            create_or_update_playlist(spotify, artist)
+
             go = input('Continue? (y/n): ') == 'y'
     else:
         print ('Can\'t get token for \'{0}\''.format(user))
+
+"""
+If a playlist for the artist already exists return it, otherwise create a new
+one to add the songs to.
+"""
+def select_playlist(spotify, artist, user_id):
+    user_playlists = spotify.current_user_playlists()
+    playlist_name = '{0}Degrees of {1}'.format(degrees, artist)
+
+    playlist_id = None
+    for playlist in user_playlists['items']:
+        if playlist['name'] == playlist_name:
+           playlist_id = playlist['id']
+
+    if not playlist_id:
+        playlist_id = spotify.user_playlist_create(user_id, playlist_name, True, 'Created by 6Degrees')
+
+    return playlist_id
+
+
+def create_or_update_playlist(spotify, artist):
+    user_id = spotify.current_user()['id']
+    playlist_id = select_playlist(spotify, artist, user_id)
 
 """
 Parse args for the program. First must be sid filename, remaining are optional.
