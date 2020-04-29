@@ -20,12 +20,76 @@ def main_loop():
 
         go = True
         while go:
-            artist = input('Artist Name: ')
-            create_or_update_playlist(spotify, artist)
+            six_degrees(spotify)
 
             go = input('Continue? (y/n): ') == 'y'
     else:
         print ('Can\'t get token for \'{0}\''.format(user))
+
+
+
+"""
+Main caller for generating a 6Degrees playlist
+"""
+def six_degrees(spotify):
+    artist = input('Artist Name: ').strip()
+    track_ids = artist_and_related_top_10(spotify, artist, degrees)
+    playlist_id = create_or_update_playlist(spotify, artist)
+    add_to_playlist(spotify, playlist_id, track_ids)
+
+def top_10_of(spotify, artist):
+    select_artist(spotify, artist)
+
+"""
+Get user to choose which artist seems to be the one they want
+"""
+def select_artist(spotify, artist):
+    q = 'artist:' + encode(artist)
+    artist_objs = (spotify.search(q, type='artist')['artists'])['items']
+    if not artist_objs:
+        print ('No results found.')
+        six_degrees(spotify)
+
+    print ('Please select the artist you want by enterting the number next to them.')
+
+    option = 1
+    artist_ids = []
+    for artist in artist_objs:
+        print ('{0}. Name: {1}, Genres: {2}, Link: {3}'.format(option, artist['name'], artist['genres'], (artist['external_urls'])['spotify']))
+        artist_ids.append(artist['id'])
+        option += 1
+
+    artist_id = None
+    while True:
+        try:
+            choice = int(input('Selection: '))
+            if choice > 0 and choice < len(artist_ids) + 1:
+                artist_id = artist_ids[choice]
+                break
+            else:
+                print ('Selection must be between 1 and {0}'.format(len(artist_ids)))
+        except:
+            print('Input is not a number between 1 and {1}.'.format(choice, len(artist_ids)))
+
+    return artist_id
+
+def artist_and_related_top_10(spotify, artist, degrees):
+    top_10_of(spotify, artist)
+
+def add_to_playlist(spotify, playlist_id, track_ids):
+    pass
+
+"""
+Replace all spaces with plus for query
+"""
+def encode(s):
+    result = ''
+    for c in s:
+        if c == ' ':
+            result += '+'
+        else:
+            result += c
+    return result
 
 """
 If a playlist for the artist already exists return it, otherwise create a new
