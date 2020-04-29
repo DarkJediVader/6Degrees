@@ -34,11 +34,16 @@ Main caller for generating a 6Degrees playlist
 def six_degrees(spotify):
     artist = input('Artist Name: ').strip()
     track_ids = artist_and_related_top_10(spotify, artist, degrees)
-    playlist_id = create_or_update_playlist(spotify, artist)
-    add_to_playlist(spotify, playlist_id, track_ids)
 
-def top_10_of(spotify, artist):
-    select_artist(spotify, artist)
+    if track_ids:
+        user_id = spotify.current_user()['id']
+        playlist_id = select_playlist(spotify, user_id, artist)
+        add_to_playlist(spotify, user_id, playlist_id, track_ids)
+        print ('Playlist created')
+
+##########
+# ARTIST #
+##########
 
 """
 Get user to choose which artist seems to be the one they want
@@ -48,7 +53,7 @@ def select_artist(spotify, artist):
     artist_objs = (spotify.search(q, type='artist')['artists'])['items']
     if not artist_objs:
         print ('No results found.')
-        six_degrees(spotify)
+        return None
 
     print ('Please select the artist you want by enterting the number next to them.')
 
@@ -64,7 +69,7 @@ def select_artist(spotify, artist):
         try:
             choice = int(input('Selection: '))
             if choice > 0 and choice < len(artist_ids) + 1:
-                artist_id = artist_ids[choice]
+                artist_id = artist_ids[choice - 1]
                 break
             else:
                 print ('Selection must be between 1 and {0}'.format(len(artist_ids)))
@@ -73,29 +78,39 @@ def select_artist(spotify, artist):
 
     return artist_id
 
+"""
+Return a list of the top tracks by the artist given
+"""
+def top_10_of(spotify, artist_id):
+    tracks = spotify.artist_top_tracks(artist_id)['tracks']
+
+    track_ids = []
+    for track in tracks:
+        track_ids.append(track['id'])
+
+    return track_ids
+
+"""
+Get top tracks of artist and related artists
+"""
 def artist_and_related_top_10(spotify, artist, degrees):
-    top_10_of(spotify, artist)
+    artist_id = select_artist(spotify, artist)
 
-def add_to_playlist(spotify, playlist_id, track_ids):
-    pass
+    track_ids = None
+    if artist_id:
+        track_ids = top_10_of(spotify, artist_id)
 
-"""
-Replace all spaces with plus for query
-"""
-def encode(s):
-    result = ''
-    for c in s:
-        if c == ' ':
-            result += '+'
-        else:
-            result += c
-    return result
+    return track_ids
+
+############
+# PLAYLIST #
+############
 
 """
 If a playlist for the artist already exists return it, otherwise create a new
 one to add the songs to.
 """
-def select_playlist(spotify, artist, user_id):
+def select_playlist(spotify, user_id, artist):
     user_playlists = spotify.current_user_playlists()
     playlist_name = '{0}Degrees of {1}'.format(degrees, artist)
 
@@ -109,10 +124,28 @@ def select_playlist(spotify, artist, user_id):
 
     return playlist_id
 
+"""
+Add all tracks to playlist of user
+"""
+def add_to_playlist(spotify, user_id, playlist_id, track_ids):
+    spotify.user_playlist_add_tracks(user_id, playlist_id, track_ids)
 
-def create_or_update_playlist(spotify, artist):
-    user_id = spotify.current_user()['id']
-    playlist_id = select_playlist(spotify, artist, user_id)
+
+##########
+# HELPER #
+##########
+
+"""
+Replace all spaces with plus for query
+"""
+def encode(s):
+    result = ''
+    for c in s:
+        if c == ' ':
+            result += '+'
+        else:
+            result += c
+    return result
 
 """
 Parse args for the program. First must be sid filename, remaining are optional.
