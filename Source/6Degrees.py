@@ -38,6 +38,7 @@ def six_degrees(spotify):
     if track_ids:
         user_id = spotify.current_user()['id']
         playlist_id = select_playlist(spotify, user_id, artist)
+        print (type(playlist_id))
         add_to_playlist(spotify, user_id, playlist_id, track_ids)
         print ('Playlist created')
 
@@ -120,7 +121,7 @@ def select_playlist(spotify, user_id, artist):
            playlist_id = playlist['id']
 
     if not playlist_id:
-        playlist_id = spotify.user_playlist_create(user_id, playlist_name, True, 'Created by 6Degrees')
+        playlist_id = spotify.user_playlist_create(user_id, playlist_name, True, 'Created by 6Degrees')['id']
 
     return playlist_id
 
