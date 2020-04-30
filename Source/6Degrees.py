@@ -149,6 +149,7 @@ def select_playlist(spotify, user_id, artist):
 Add all tracks to playlist of user
 """
 def add_to_playlist(spotify, user_id, playlist_id, track_ids):
+    print ('Adding {0} songs to the playlist.'.format(len(track_ids)))
     batches = split_tracks([], 0, len(track_ids), track_ids, 100)
 
     for batch in batches:
