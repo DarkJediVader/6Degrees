@@ -79,16 +79,35 @@ def select_artist(spotify, artist):
     return artist_id
 
 """
-Return a list of the top tracks by the artist given
+Return a list of the top tracks by the artists given
 """
-def top_10_of(spotify, artist_id):
-    tracks = spotify.artist_top_tracks(artist_id)['tracks']
-
+def top_10_of(spotify, artist_ids):
     track_ids = []
-    for track in tracks:
-        track_ids.append(track['id'])
+
+    for artist_id in artist_ids:
+        tracks = spotify.artist_top_tracks(artist_id)['tracks']
+        for track in tracks:
+            track_ids.append(track['id'])
 
     return track_ids
+
+"""
+Get all related artist ids as many degrees deep
+"""
+def related_artists(spotify, artist_id):
+    artist_ids = [artist_id]
+    seen_ids = [artist_id]
+
+    current_id = artist_id
+    for i in range(0, degrees):
+        artist_objs = spotify.artist_related_artists(current_id)['artists']
+        for artist_obj in artist_objs:
+            current_id = artist_obj['id']
+            if current_id not in seen_ids:
+                artist_ids.append(current_id)
+                seen_ids.append(current_id)
+
+    return artist_ids
 
 """
 Get top tracks of artist and related artists
@@ -96,9 +115,11 @@ Get top tracks of artist and related artists
 def artist_and_related_top_10(spotify, artist, degrees):
     artist_id = select_artist(spotify, artist)
 
+    artist_ids = related_artists(spotify, artist_id)
+
     track_ids = None
     if artist_id:
-        track_ids = top_10_of(spotify, artist_id)
+        track_ids = top_10_of(spotify, artist_ids)
 
     return track_ids
 
@@ -128,12 +149,27 @@ def select_playlist(spotify, user_id, artist):
 Add all tracks to playlist of user
 """
 def add_to_playlist(spotify, user_id, playlist_id, track_ids):
-    spotify.user_playlist_add_tracks(user_id, playlist_id, track_ids)
+    batches = split_tracks([], 0, len(track_ids), track_ids, 100)
+
+    for batch in batches:
+        spotify.user_playlist_add_tracks(user_id, playlist_id, batch)
 
 
 ##########
 # HELPER #
 ##########
+
+"""
+Return a list of lists of at most length slice
+"""
+def split_tracks(batches, start_index, tracks_left, track_ids, slice):
+    if tracks_left < 100:
+        batches.append(track_ids[start_index:])
+    else:
+        batches.append(track_ids[start_index:start_index + slice])
+        split_tracks(batches, start_index + slice, tracks_left - slice, track_ids, slice)
+
+    return batches
 
 """
 Parse args for the program. First must be sid filename, remaining are optional.
