@@ -38,7 +38,6 @@ def six_degrees(spotify):
     if track_ids:
         user_id = spotify.current_user()['id']
         playlist_id = select_playlist(spotify, user_id, artist)
-        print (type(playlist_id))
         add_to_playlist(spotify, user_id, playlist_id, track_ids)
         print ('Playlist created')
 
@@ -50,7 +49,7 @@ def six_degrees(spotify):
 Get user to choose which artist seems to be the one they want
 """
 def select_artist(spotify, artist):
-    q = 'artist:' + encode(artist)
+    q = 'artist:' + artist
     artist_objs = (spotify.search(q, type='artist')['artists'])['items']
     if not artist_objs:
         print ('No results found.')
@@ -135,18 +134,6 @@ def add_to_playlist(spotify, user_id, playlist_id, track_ids):
 ##########
 # HELPER #
 ##########
-
-"""
-Replace all spaces with plus for query
-"""
-def encode(s):
-    result = ''
-    for c in s:
-        if c == ' ':
-            result += '+'
-        else:
-            result += c
-    return result
 
 """
 Parse args for the program. First must be sid filename, remaining are optional.
