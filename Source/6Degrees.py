@@ -179,11 +179,12 @@ def remove_duplicate(list):
 Return a list of lists of at most length slice
 """
 def split_tracks(batches, start_index, tracks_left, track_ids, slice):
-    if tracks_left < 100:
-        batches.append(track_ids[start_index:])
-    else:
-        batches.append(track_ids[start_index:start_index + slice])
-        split_tracks(batches, start_index + slice, tracks_left - slice, track_ids, slice)
+    if not tracks_left == 0:
+        if tracks_left < 100:
+            batches.append(track_ids[start_index:])
+        else:
+            batches.append(track_ids[start_index:start_index + slice])
+            split_tracks(batches, start_index + slice, tracks_left - slice, track_ids, slice)
 
     return batches
 
