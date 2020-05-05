@@ -8,6 +8,7 @@ client_id = None
 client_secret = None
 redirect_uri = None
 degrees = 1
+top = 10
 playlist_name = '{0}Degrees of {1}'
 
 def main_loop():
@@ -36,8 +37,8 @@ def six_degrees(spotify):
 
     if track_ids:
         user_id = spotify.current_user()['id']
-        playlist_id = select_playlist(spotify, user_id, artist)
-        add_to_playlist(spotify, user_id, playlist_id, track_ids)
+        playlist_id, playlist_track_ids = select_playlist(spotify, user_id, artist)
+        add_to_playlist(spotify, user_id, playlist_id, track_ids, playlist_track_ids)
         print ('Playlist created')
 
 ##########
@@ -85,7 +86,7 @@ def top_10_of(spotify, artist_ids):
 
     for artist_id in artist_ids:
         tracks = spotify.artist_top_tracks(artist_id)['tracks']
-        for track in tracks:
+        for track in tracks[0:top]:
             track_ids.append(track['id'])
 
     return track_ids
@@ -134,21 +135,28 @@ def select_playlist(spotify, user_id, artist):
     user_playlists = spotify.current_user_playlists()
     playlist_name = '{0}Degrees of {1}'.format(degrees, artist)
 
+    track_ids = []
     playlist_id = None
     for playlist in user_playlists['items']:
         if playlist['name'] == playlist_name:
            playlist_id = playlist['id']
-
+           track_ids = all_tracks_in(spotify, playlist_id)
     if not playlist_id:
         playlist_id = spotify.user_playlist_create(user_id, playlist_name, True, 'Created by 6Degrees')['id']
 
-    return playlist_id
+    return (playlist_id, track_ids)
+
+"""
+Get all tracks in the given playlist
+"""
+def all_tracks_in(spotify, playlist_id):
+    return []
 
 """
 Add all tracks to playlist of user
 """
-def add_to_playlist(spotify, user_id, playlist_id, track_ids):
-    track_ids = remove_duplicate(track_ids)
+def add_to_playlist(spotify, user_id, playlist_id, track_ids, playlist_track_ids):
+    track_ids = remove_duplicate(track_ids, playlist_track_ids)
     print ('Adding {0} songs to the playlist.'.format(len(track_ids)))
     batches = split_tracks([], 0, len(track_ids), track_ids, 100)
 
@@ -163,11 +171,11 @@ def add_to_playlist(spotify, user_id, playlist_id, track_ids):
 """
 Return the track_ids with any duplicates removed
 """
-def remove_duplicate(list):
+def remove_duplicate(list, existing):
     sans_duplicate = []
     dupe_count = 0
     for item in list:
-        if item not in sans_duplicate:
+        if item not in sans_duplicate and item not in existing:
             sans_duplicate.append(item)
         else:
             dupe_count += 1
@@ -198,11 +206,15 @@ def parse_args(args):
 
         parser = OptionParser(usage=usage.format('%prog'))
         parser.add_option('-d', '--Degrees', default=1, dest='degrees', type='int', help='Set how many layers deep the application goes. The higher the number the longer the runtime and larger the playlist.')
+        parser.add_option('-t', '--Top', default=10, dest='top', type='int', help='Set the limit on how many top tracks are added for each artist.')
 
         (options, args) = parser.parse_args()
 
         global degrees
         degrees = options.degrees
+
+        global top
+        top = options.top
 
         parse_sid(filename)
     else:
