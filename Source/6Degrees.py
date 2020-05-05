@@ -27,7 +27,6 @@ def main_loop():
         print ('Can\'t get token for \'{0}\''.format(user))
 
 
-
 """
 Main caller for generating a 6Degrees playlist
 """
@@ -149,6 +148,7 @@ def select_playlist(spotify, user_id, artist):
 Add all tracks to playlist of user
 """
 def add_to_playlist(spotify, user_id, playlist_id, track_ids):
+    track_ids = remove_duplicate(track_ids)
     print ('Adding {0} songs to the playlist.'.format(len(track_ids)))
     batches = split_tracks([], 0, len(track_ids), track_ids, 100)
 
@@ -159,6 +159,21 @@ def add_to_playlist(spotify, user_id, playlist_id, track_ids):
 ##########
 # HELPER #
 ##########
+
+"""
+Return the track_ids with any duplicates removed
+"""
+def remove_duplicate(list):
+    sans_duplicate = []
+    dupe_count = 0
+    for item in list:
+        if item not in sans_duplicate:
+            sans_duplicate.append(item)
+        else:
+            dupe_count += 1
+
+    print ('Removed {0} duplicate songs'.format(dupe_count))
+    return sans_duplicate
 
 """
 Return a list of lists of at most length slice
